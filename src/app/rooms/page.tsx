@@ -81,7 +81,7 @@ export default function RoomsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rooms.map((room) => (
             <div key={room.room_id} className="border p-4 rounded-lg shadow-md bg-white">
-              <h2 className="text-xl font-semibold mb-2">{room.room_name}</h2>
+              <h2 className="text-gray-700 text-xl font-semibold mb-2">{room.room_name}</h2>
               <p className="text-gray-700">Size: {room.room_size}</p>
               <p className="text-gray-700">Rate: ${room.room_rentrate?.toString()}/hr (example rate)</p>
               {/* Availability display here would be more complex, requiring checks against Rental_Transaction */}

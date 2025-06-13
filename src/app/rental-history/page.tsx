@@ -123,7 +123,7 @@ export default function RentalHistoryPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-8 text-center text-gray-800">Your Rental History 🧾</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center text-blue-200">Your Rental History 🧾</h1>
       {rentals.length === 0 ? (
         <div className="text-center py-10">
             <p className="text-xl text-gray-600 mb-4">You have no past rentals.</p>

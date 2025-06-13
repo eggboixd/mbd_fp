@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useAuth } from '@/components/AuthProvider'; // Adjust path if needed
+import { useAuth } from '@/components/AuthProvider'; 
 import { Database } from '@/types/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -12,7 +12,7 @@ export default function MembershipPage() {
   const router = useRouter();
   const [membership, setMembership] = useState<Membership | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // Page-level error state
+  const [error, setError] = useState<string | null>(null); 
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function MembershipPage() {
       const { data, error: fetchError } = await supabase
         .from('Membership')
         .select('*')
-        .eq('Student_stdn_id', studentId) // Ensure your DB column is 'Student_stdn_id' or "Student_stdn_id" if quoted
+        .eq('Student_stdn_id', studentId) 
         .single();
 
       if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116: single row not found
@@ -156,8 +156,6 @@ export default function MembershipPage() {
               <button 
                 onClick={() => { 
                   setError(null); 
-                  // Optionally, re-trigger fetch if appropriate, or just let user retry action
-                  // For now, just clearing error and they can click button again.
                 }} 
                 className="text-blue-600 hover:underline"
               >

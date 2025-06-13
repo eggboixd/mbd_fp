@@ -87,7 +87,7 @@ export type Database = {
           {
             foreignKeyName: "Membership_Student"
             columns: ["Student_stdn_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "Student"
             referencedColumns: ["stdn_id"]
           },
@@ -111,7 +111,7 @@ export type Database = {
           Employee_empl_nik: string
           Room_room_id?: string | null
           Student_stdn_id: string
-          trsc_id: string
+          trsc_id?: string
           trsc_latefee?: number | null
           trsc_paymentmethod: string
           trsc_rentend: string
@@ -135,21 +135,21 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "Rental_Transaction_Employee"
+            foreignKeyName: "Rental_Transaction_Employee_fk"
             columns: ["Employee_empl_nik"]
             isOneToOne: false
             referencedRelation: "Employee"
             referencedColumns: ["empl_nik"]
           },
           {
-            foreignKeyName: "Rental_Transaction_Room"
+            foreignKeyName: "Rental_Transaction_Room_fk"
             columns: ["Room_room_id"]
             isOneToOne: false
             referencedRelation: "Room"
             referencedColumns: ["room_id"]
           },
           {
-            foreignKeyName: "Rental_Transaction_Student"
+            foreignKeyName: "Rental_Transaction_Student_fk"
             columns: ["Student_stdn_id"]
             isOneToOne: false
             referencedRelation: "Student"
@@ -214,14 +214,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "Transaction_Instrument_Instrument"
+            foreignKeyName: "Transaction_Instrument_Instrument_fk"
             columns: ["Instrument_inst_id"]
             isOneToOne: false
             referencedRelation: "Instrument"
             referencedColumns: ["inst_id"]
           },
           {
-            foreignKeyName: "Transaction_Instrument_Transaction"
+            foreignKeyName: "Transaction_Instrument_Transaction_fk"
             columns: ["Transaction_trsc_id"]
             isOneToOne: false
             referencedRelation: "Rental_Transaction"
@@ -234,7 +234,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_late_fee_days: {
+        Args:
+          | { in_trx_id: string; in_rate_per_day: number }
+          | { in_trx_id: string; in_rate_per_day: number }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
