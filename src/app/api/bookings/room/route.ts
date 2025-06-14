@@ -24,19 +24,20 @@ export async function POST(req: NextRequest) {
         const startDate = new Date(rent_start);
         const endDate = new Date(rent_end);
 
-        // 1. Check for conflicting bookings for the same room
+        // 1. Final availability check (server-side for security)
         const { data: conflictingBookings, error: checkError } = await supabaseAdmin
             .from('Rental_Transaction')
-            .select('trsc_id', { count: 'exact' }) // just need to know if any exist
+            .select('trsc_id', { count: 'exact' })
             .eq('Room_room_id', room_id)
-            .or(`[trsc_rentstart,trsc_rentend).ov.[${startDate.toISOString()},${endDate.toISOString()})`); // Check for overlapping time ranges
+            .lt('trsc_rentstart', endDate.toISOString())
+            .gt('trsc_rentend', startDate.toISOString());
 
         if (checkError) {
-            console.error("Error checking room availability:", checkError);
-            return NextResponse.json({ error: 'Could not check room availability.' }, { status: 500 });
+            console.error("Error re-checking room availability before booking:", checkError);
+            return NextResponse.json({ error: 'Could not confirm room availability.' }, { status: 500 });
         }
         if (conflictingBookings && conflictingBookings.length > 0) {
-            return NextResponse.json({ error: 'This time slot is no longer available.' }, { status: 409 }); // 409 Conflict
+            return NextResponse.json({ error: 'This time slot was just booked by someone else. Please try another time.' }, { status: 409 });
         }
 
         // 2. Fetch room details to calculate price
@@ -83,11 +84,33 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: `Failed to create transaction: ${transactionError.message}` }, { status: 500 });
         }
 
-        // No need to link instruments here, but we could award points
         const newTransactionId = transactionData.trsc_id;
 
-        // Award points if applicable
-        // ... (you can copy the point-awarding logic from the instrument booking route here)
+        // --- ADDED THIS BLOCK ---
+        // 6. Award Membership Points if the student is a member
+        const { data: membership } = await supabaseAdmin
+            .from('Membership')
+            .select('mmbr_id, mmbr_points')
+            .eq('Student_stdn_id', student_stdn_id)
+            .single();
+
+        if (membership) {
+            // Define your points calculation rule
+            const pointsToAdd = Math.floor(totalPrice / 10000); // Example: 1 point per 10,000 spent
+            
+            if (pointsToAdd > 0) {
+              const newPoints = (membership.mmbr_points || 0) + pointsToAdd;
+              
+              // Update the points in the Membership table
+              await supabaseAdmin
+                  .from('Membership')
+                  .update({ mmbr_points: newPoints })
+                  .eq('mmbr_id', membership.mmbr_id);
+              
+              console.log(`Awarded ${pointsToAdd} points for room booking. New total: ${newPoints}`);
+            }
+        }
+        // --- END OF BLOCK ---
 
         return NextResponse.json({ message: 'Room booking successful!', transactionId: newTransactionId }, { status: 201 });
 

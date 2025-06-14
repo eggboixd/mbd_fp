@@ -26,14 +26,14 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid date range' }, { status: 400 });
         }
 
-        // Perform the overlap check on the server with the corrected filter syntax
+        // --- CORRECTED AVAILABILITY CHECK ---
+        // This query checks for any booking that overlaps with the requested time window.
         const { data: conflictingBookings, error: checkError } = await supabaseAdmin
             .from('Rental_Transaction')
             .select('trsc_id', { count: 'exact' })
             .eq('Room_room_id', roomId)
-            // CORRECTED: Removed extra parentheses from the filter string
-            .or(`[trsc_rentstart,trsc_rentend).ov.${startDate.toISOString()},${endDate.toISOString()}`);
-
+            .lt('trsc_rentstart', endDate.toISOString())   // Find bookings that start *before* the new booking ends
+            .gt('trsc_rentend', startDate.toISOString());  // AND end *after* the new booking starts
 
         if (checkError) {
             console.error("Server-side availability check error:", checkError);
