@@ -11,7 +11,7 @@ type Instrument = Database['public']['Tables']['Instrument']['Row'];
 export default function BookInstrumentPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, studentId, isLoading: authLoading } = useAuth();
+  const { user, profile, isLoading: authLoading } = useAuth();
   const instrumentId = params.id as string;
 
   const [instrument, setInstrument] = useState<Instrument | null>(null);
@@ -53,7 +53,7 @@ export default function BookInstrumentPage() {
     setError(null);
     setBookingMessage(null);
 
-    if (!user || !studentId) {
+    if (!user || !profile?.stdn_id) {
       setError('You must be logged in as a student to book an instrument.');
       router.push(`/login?redirect=/book/instrument/${instrumentId}`);
       return;
@@ -83,7 +83,7 @@ export default function BookInstrumentPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           instrument_id: instrument.inst_id,
-          student_stdn_id: studentId, // From AuthProvider
+          student_stdn_id: profile.stdn_id, // From AuthProvider
           rent_start: rentStart,
           rent_end: rentEnd,
           payment_method: 'Online', // Example
@@ -138,7 +138,7 @@ export default function BookInstrumentPage() {
             <label htmlFor="rentEnd" className="block text-sm font-medium">Rent End Time:</label>
             <input type="datetime-local" id="rentEnd" value={rentEnd} onChange={(e) => setRentEnd(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
           </div>
-          <button type="submit" disabled={loading || !user || !studentId} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:bg-gray-400">
+          <button type="submit" disabled={loading || !user || !profile?.stdn_id} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:bg-gray-400">
             {loading ? 'Processing...' : 'Book Now'}
           </button>
           {!user && <p className="text-sm text-center mt-2">Please <Link href="/login" className="text-blue-500 hover:underline">log in</Link> to book.</p>}

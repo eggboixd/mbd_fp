@@ -12,7 +12,8 @@ type Room = Database['public']['Tables']['Room']['Row'];
 export default function BookRoomPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, studentId, isLoading: authLoading } = useAuth();
+  // CORRECTED: Get the full 'profile' object from useAuth, not the old 'studentId'
+  const { user, profile, isLoading: authLoading } = useAuth(); 
   const roomId = params.id as string;
 
   const [room, setRoom] = useState<Room | null>(null);
@@ -58,7 +59,6 @@ export default function BookRoomPage() {
 
   // Effect to check availability by calling our secure API route
   useEffect(() => {
-    // Clear messages if dates are incomplete
     if (!rentStart || !rentEnd) {
       setAvailabilityMessage('');
       setIsAvailable(null);
@@ -72,23 +72,19 @@ export default function BookRoomPage() {
       return;
     }
 
-    // This is a "debounce" timer. It waits until you stop typing for 500ms before making the API call.
     const handler = setTimeout(async () => {
       setAvailabilityMessage('Checking availability...');
-      setIsAvailable(null); // Reset availability status while checking
+      setIsAvailable(null);
 
       try {
-        // Call your new API route instead of Supabase directly
         const response = await fetch(`/api/availability/room?roomId=${roomId}&start=${startDate.toISOString()}&end=${endDate.toISOString()}`);
         
         const result = await response.json();
 
         if (!response.ok) {
-          // The API route returned an error
           throw new Error(result.error || 'Failed to check availability.');
         }
 
-        // Update UI based on the API response
         if (result.isAvailable) {
           setAvailabilityMessage('This time slot is available!');
           setIsAvailable(true);
@@ -100,11 +96,10 @@ export default function BookRoomPage() {
       } catch (err: unknown) {
         console.error("Client-side availability check error:", err);
         setAvailabilityMessage('Could not check availability.');
-        setIsAvailable(false); // Assume unavailable if the check fails
+        setIsAvailable(false);
       }
     }, 500);
 
-    // This cleanup function clears the timer if you type again before it fires
     return () => {
       clearTimeout(handler);
     };
@@ -116,7 +111,8 @@ export default function BookRoomPage() {
     setError(null);
     setSuccessMessage(null);
 
-    if (!user || !studentId) {
+    // CORRECTED: Check for user and the profile object
+    if (!user || !profile?.stdn_id) {
       setError('You must be logged in as a student to book. Redirecting...');
       setTimeout(() => router.push(`/login?redirect=/book/room/${roomId}`), 2000);
       return;
@@ -130,13 +126,12 @@ export default function BookRoomPage() {
     setBookingInProgress(true);
 
     try {
-      // The API route for booking should also exist. This assumes /api/bookings/room is ready.
       const response = await fetch('/api/bookings/room', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           room_id: roomId,
-          student_stdn_id: studentId,
+          student_stdn_id: profile.stdn_id, // CORRECTED: Use profile.stdn_id
           rent_start: new Date(rentStart).toISOString(),
           rent_end: new Date(rentEnd).toISOString(),
         }),
@@ -230,7 +225,8 @@ export default function BookRoomPage() {
 
             <button
               type="submit"
-              disabled={bookingInProgress || !user || !studentId || isAvailable !== true}
+              // CORRECTED: Use 'profile' for the check
+              disabled={bookingInProgress || !user || !profile || isAvailable !== true}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-4 rounded-md transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {bookingInProgress ? 'Processing Booking...' : 'Confirm Booking'}

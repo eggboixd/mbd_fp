@@ -1,103 +1,122 @@
-import Image from "next/image";
+import Link from 'next/link';
+import { supabase } from '@/lib/supabaseClient';
+import { CubeTransparentIcon, CalendarDaysIcon, MusicalNoteIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
-export default function Home() {
+export default async function HomePage() {
+  
+  const { data: featuredInstruments } = await supabase
+    .from('Instrument')
+    .select('*')
+    .eq('inst_status', 'Ready')
+    .limit(3);
+
+  const features = [
+    {
+      name: 'Browse Our Collection',
+      description: 'Explore our wide variety of high-quality instruments and professional studio rooms.',
+      icon: CubeTransparentIcon,
+      href: '/instruments'
+    },
+    {
+      name: 'Book with Ease',
+      description: 'Check availability in real-time and book your desired time slot instantly through our simple interface.',
+      icon: CalendarDaysIcon,
+      href: '/rooms'
+    },
+    {
+      name: 'Play and Create',
+      description: 'Enjoy your rental! Create music, practice your skills, and make the most of your time.',
+      icon: MusicalNoteIcon,
+      href: '#'
+    },
+  ];
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="bg-gray-50 text-gray-800">
+      <section className="relative bg-gray-900 text-white text-center py-24 sm:py-32 lg:py-40">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30" 
+          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1511379938547-c1f69419868d?q=80&w=2070&auto=format&fit=crop')` }}
+        ></div>
+        <div className="relative z-10 container mx-auto px-4">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight">
+            Your Sound, Your Space, Your Time.
+          </h1>
+          <p className="mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-gray-300">
+            High-quality instrument and studio room rentals for every musician. Find what you need and start creating today.
+          </p>
+          <div className="mt-10 flex flex-col sm:flex-row justify-center items-center gap-4">
+            <Link href="/instruments" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300">
+              Browse Instruments
+            </Link>
+            <Link href="/rooms" className="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300">
+              Explore Rooms
+            </Link>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </section>
+
+      <section className="py-20 sm:py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold tracking-tight">How It Works</h2>
+            <p className="mt-4 text-lg text-gray-600">Renting with us is simple and straightforward.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {features.map((feature) => (
+              <div key={feature.name} className="text-center p-6 bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow">
+                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-blue-500 text-white mx-auto mb-4">
+                  <feature.icon className="h-6 w-6" aria-hidden="true" />
+                </div>
+                <h3 className="text-xl font-semibold">{feature.name}</h3>
+                <p className="mt-2 text-gray-600">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {featuredInstruments && featuredInstruments.length > 0 && (
+        <section className="bg-gray-100 py-20 sm:py-24">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tight">Featured Instruments</h2>
+              <p className="mt-4 text-lg text-gray-600">Check out some of our available gear.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredInstruments.map((instrument) => (
+                <div key={instrument.inst_id} className="border p-5 rounded-lg shadow-lg bg-white hover:shadow-xl transition-shadow duration-300 flex flex-col">
+                  {/* You would add an <Image /> component here once you have image URLs */}
+                  <h3 className="text-xl font-semibold mb-2 text-blue-800">{instrument.inst_name}</h3>
+                  <p className="text-gray-500 mb-4">{instrument.inst_type}</p>
+                  <div className="mt-auto">
+                    <Link href={`/book/instrument/${instrument.inst_id}`} className="flex items-center justify-center font-semibold text-blue-600 hover:text-blue-800">
+                      View Details <ArrowRightIcon className="ml-2 h-5 w-5" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="text-center mt-12">
+                <Link href="/instruments" className="bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300">
+                    See All Instruments
+                </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="bg-blue-600">
+        <div className="container mx-auto px-4 py-16 text-center">
+            <h2 className="text-3xl font-bold text-white">Ready to Start Playing?</h2>
+            <p className="mt-4 text-lg text-blue-200">Create an account to join our membership program and start booking today.</p>
+            <div className="mt-8">
+                <Link href="/signup" className="bg-white hover:bg-gray-200 text-blue-700 font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300">
+                    Sign Up Now
+                </Link>
+            </div>
+        </div>
+      </section>
     </div>
   );
 }

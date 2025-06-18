@@ -5,20 +5,22 @@ import { Database } from '@/types/supabase';
 import Link from 'next/link';
 
 type Room = Database['public']['Tables']['Room']['Row'];
-// type Transaction = Database['public']['Tables']['Rental_Transaction']['Row'];
 
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // For simplicity, we'll show all rooms and users can check specific availability during booking.
-  // A more complex UI would show available slots directly.
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchRooms = async () => {
     setLoading(true);
     setError(null);
-    const { data, error: fetchError } = await supabase.from('Room').select('*');
-
+    let query = supabase.from('Room').select('*').order('room_name', { ascending: true });
+    if (searchTerm.trim() !== '') {
+      const cleanedSearchTerm = searchTerm.trim();
+      query = query.or(`room_name.ilike.%${cleanedSearchTerm}%,room_size.ilike.%${cleanedSearchTerm}%`);
+    }
+    const { data, error: fetchError } = await query;
     if (fetchError) {
       console.error('Error fetching rooms:', fetchError);
       setError(fetchError.message);
@@ -31,8 +33,10 @@ export default function RoomsPage() {
 
   useEffect(() => {
     fetchRooms();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
-    // Realtime for Room data changes (e.g., new room added, name change)
+  useEffect(() => {
     const roomChannel = supabase
       .channel('room-details-updates')
       .on(
@@ -40,13 +44,10 @@ export default function RoomsPage() {
         { event: '*', schema: 'public', table: 'Room' },
         (payload) => {
           console.log('Room detail change received!', payload);
-          fetchRooms(); // Refetch rooms if details change
+          fetchRooms();
         }
       )
       .subscribe();
-
-    // Realtime for transactions that affect room availability (more complex to show on list view)
-    // For now, this just logs, actual availability check will be on booking.
     const transactionChannel = supabase
       .channel('room-booking-updates')
       .on(
@@ -54,12 +55,9 @@ export default function RoomsPage() {
         { event: '*', schema: 'public', table: 'Rental_Transaction' },
         (payload) => {
           console.log('Rental transaction change impacting rooms received!', payload);
-          // Potentially refetch rooms or update availability status if displaying it here.
-          // For this example, we keep it simple. Users check on the booking page.
         }
       )
       .subscribe();
-
     return () => {
       supabase.removeChannel(roomChannel);
       supabase.removeChannel(transactionChannel);
@@ -68,27 +66,36 @@ export default function RoomsPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Available Rooms 🚪</h1>
-      {/* TODO: Add date/time pickers for a more refined availability search */}
-      {/* <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="mb-4 p-2 border rounded" /> */}
-
-      {loading && <p>Loading rooms...</p>}
-      {error && <p className="text-red-500">Error: {error}</p>}
-
-      {!loading && !error && rooms.length === 0 && <p>No rooms currently available.</p>}
-
+      <h1 className="text-3xl font-bold mb-6 text-center">Our Rooms</h1>
+      <input
+        type="text"
+        placeholder="Search by name or size..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="mb-6 p-3 border border-gray-300 rounded-md w-full md:w-2/3 lg:w-1/2 shadow-sm focus:ring-blue-500 focus:border-blue-500 block mx-auto"
+      />
+      {loading && <p className="text-center text-gray-600">Loading rooms...</p>}
+      {error && (
+        <div className="text-center text-red-600 bg-red-100 p-3 rounded-md mb-4">
+          <p><strong>Error:</strong> {error}</p>
+        </div>
+      )}
+      {!loading && !error && rooms.length === 0 && (
+        <p className="text-center text-gray-700">No rooms found.</p>
+      )}
       {!loading && !error && rooms.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {rooms.map((room) => (
-            <div key={room.room_id} className="border p-4 rounded-lg shadow-md bg-white">
-              <h2 className="text-gray-700 text-xl font-semibold mb-2">{room.room_name}</h2>
-              <p className="text-gray-700">Size: {room.room_size}</p>
-              <p className="text-gray-700">Rate: ${room.room_rentrate?.toString()}/hr (example rate)</p>
-              {/* Availability display here would be more complex, requiring checks against Rental_Transaction */}
-              <Link href={`/book/room/${room.room_id}`}
-                 className="mt-4 inline-block bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                Check Availability & Book
-              </Link>
+            <div key={room.room_id} className="border p-5 rounded-lg shadow-lg bg-white hover:shadow-xl transition-shadow duration-300 flex flex-col">
+              <h2 className="text-xl font-semibold mb-2 text-blue-700">{room.room_name}</h2>
+              <p className="text-gray-600 mb-1"><span className="font-medium">Size:</span> {room.room_size}</p>
+              <p className="text-gray-800 mb-1 font-semibold">Rate: Rp.{room.room_rentrate?.toString()}/hr</p>
+              <div className="mt-auto">
+                <Link href={`/book/room/${room.room_id}`}
+                  className="block w-full text-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-300">
+                  Check Availability & Book
+                </Link>
+              </div>
             </div>
           ))}
         </div>

@@ -2,11 +2,15 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import type { Session, User } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
+
+// Define a type for the student profile for clarity
+type StudentProfile = Database['public']['Tables']['Student']['Row'];
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
-  studentId: string | null; // Your custom stdn_id
+  profile: StudentProfile | null; // Changed from studentId to the full profile
   isLoading: boolean;
   signOut: () => Promise<void>;
 }
@@ -16,37 +20,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [studentId, setStudentId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<StudentProfile | null>(null); // State for the full profile
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchSessionAndProfile = async () => {
       setIsLoading(true);
-      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        console.error("Error fetching session:", sessionError.message);
-        setIsLoading(false);
-        return;
-      }
-
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
       setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+      const currentUser = currentSession?.user ?? null;
+      setUser(currentUser);
 
-      if (currentSession?.user) {
-        // Fetch corresponding student profile
-        const { data: studentProfile, error: profileError } = await supabase
+      if (currentUser) {
+        // Fetch the entire student profile, not just the ID
+        const { data: studentProfile } = await supabase
           .from('Student')
-          .select('stdn_id')
-          .eq('auth_user_id', currentSession.user.id)
+          .select('*') // <-- Select all columns
+          .eq('auth_user_id', currentUser.id)
           .single();
-
-        if (profileError && profileError.code !== 'PGRST116') { // PGRST116: no rows found
-            console.error("Error fetching student profile:", profileError.message);
-        }
-        setStudentId(studentProfile?.stdn_id ?? null);
+        setProfile(studentProfile);
       } else {
-        setStudentId(null);
+        setProfile(null);
       }
       setIsLoading(false);
     };
@@ -55,21 +50,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       setSession(newSession);
-      setUser(newSession?.user ?? null);
-      if (newSession?.user) {
-         const { data: studentProfile, error: profileError } = await supabase
+      const newAuthUser = newSession?.user ?? null;
+      setUser(newAuthUser);
+
+      if (newAuthUser) {
+        // Also fetch profile on auth state change
+        const { data: studentProfile } = await supabase
           .from('Student')
-          .select('stdn_id')
-          .eq('auth_user_id', newSession.user.id)
+          .select('*') // <-- Select all columns
+          .eq('auth_user_id', newAuthUser.id)
           .single();
-        if (profileError && profileError.code !== 'PGRST116') {
-            console.error("Error updating student profile on auth change:", profileError.message);
-        }
-        setStudentId(studentProfile?.stdn_id ?? null);
+        setProfile(studentProfile);
       } else {
-        setStudentId(null);
+        setProfile(null);
       }
-      setIsLoading(false); // Ensure loading is false after initial check or change
+      setIsLoading(false);
     });
 
     return () => {
@@ -81,11 +76,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
-    setStudentId(null);
+    setProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, studentId, isLoading, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, isLoading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
