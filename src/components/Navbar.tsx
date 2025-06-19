@@ -30,7 +30,7 @@ export default function Navbar() {
     <nav className="bg-gray-800 text-white p-4 sticky top-0 z-50">
       <div className="container mx-auto flex justify-between items-center">
         <Link href="/" className="text-xl font-bold hover:text-gray-300 transition-colors" onClick={handleLinkClick}>
-          Instrument Rentals
+          ITS Music
         </Link>
 
         {/* Hamburger button for mobile, shown only on smaller screens */}
