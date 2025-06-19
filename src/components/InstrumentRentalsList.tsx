@@ -1,18 +1,22 @@
 import Link from 'next/link';
-import type { RentalHistoryItem } from '@/app/rental-history/page';
+import type { RentalHistoryItem as OriginalRentalHistoryItem } from '@/app/rental-history/page';
+
+type RentalHistoryItem = OriginalRentalHistoryItem & {
+  payment_status: string;
+};
 
 type Props = {
   rentals: RentalHistoryItem[];
   onPay: (transactionId: string) => Promise<void>;
 };
 
-export default function RoomRentalsList({ rentals, onPay }: Props) {
+export default function InstrumentRentalsList({ rentals, onPay }: Props) {
   if (rentals.length === 0) {
     return (
       <div className="text-center py-10">
-        <p className="text-xl text-gray-600 mb-4">You have no room rentals.</p>
-        <Link href="/rooms" className="text-lg text-blue-600 hover:text-blue-800 font-semibold hover:underline">
-          Rent a room &rarr;
+        <p className="text-xl text-gray-600 mb-4">You have no instrument rentals.</p>
+        <Link href="/instruments" className="text-lg text-blue-600 hover:text-blue-800 font-semibold hover:underline">
+          Rent an instrument &rarr;
         </Link>
       </div>
     );
@@ -21,8 +25,9 @@ export default function RoomRentalsList({ rentals, onPay }: Props) {
   return (
     <div className="space-y-8">
       {rentals.map((rental) => {
+        // Correctly check the payment_status column
+        const isPaid = rental.payment_status === 'Paid';
         const isLate = rental.trsc_latefee && rental.trsc_latefee > 0;
-        const isPaid = rental.trsc_paymentmethod === 'Paid';
 
         return (
           <div key={rental.trsc_id} className={`p-6 border rounded-xl shadow-lg bg-white transition-shadow duration-300 ${isPaid && isLate ? 'border-red-400' : 'border-gray-200'}`}>
@@ -36,14 +41,16 @@ export default function RoomRentalsList({ rentals, onPay }: Props) {
               <p><strong>Rent End:</strong> {new Date(rental.trsc_rentend).toLocaleString()}</p>
               <p><strong>Total Price:</strong> <span className="font-semibold text-gray-800">${rental.trsc_totalprice?.toString()}</span></p>
               {isPaid && rental.trsc_returndate && <p className="text-sm"><strong>Returned:</strong> {new Date(rental.trsc_returndate).toLocaleString()}</p>}
-              {isLate && <p className={`font-semibold ${isPaid ? 'text-red-600' : 'text-orange-500'}`}><strong>Late Fee:</strong> ${rental.trsc_latefee != null ? rental.trsc_latefee.toString() : '0'}</p>}
+              {isLate && <p className={`font-semibold ${isPaid ? 'text-red-600' : 'text-orange-500'}`}><strong>Late Fee:</strong> ${rental.trsc_latefee?.toString()}</p>}
             </div>
 
-            {rental.Room?.room_name && (
-              <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                <p className="font-semibold">{rental.Room.room_name}</p>
+            {/* Display the instrument details */}
+            {rental.Transaction_Instrument.map((ti, index) => (
+              <div key={`${rental.trsc_id}-${index}`} className="mt-2 p-3 bg-gray-50 rounded-lg">
+                <p className="font-semibold text-gray-800">{ti.Instrument?.inst_name || 'N/A'}</p>
+                <p className="text-sm text-gray-800">{ti.Instrument?.inst_type || 'N/A'}</p>
               </div>
-            )}
+            ))}
 
             <div className="mt-4 text-right">
               {isPaid ? (

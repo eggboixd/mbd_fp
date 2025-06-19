@@ -3,7 +3,6 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/components/AuthProvider';
 import { Database } from '@/types/supabase';
-// import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import InstrumentRentalsList from '@/components/InstrumentRentalsList';
 import RoomRentalsList from '@/components/RoomRentalsList';
@@ -14,6 +13,7 @@ export type RentalHistoryItem = Database['public']['Tables']['Rental_Transaction
   Transaction_Instrument: Array<{
     Instrument: Pick<Database['public']['Tables']['Instrument']['Row'], 'inst_name' | 'inst_type'> | null;
   }>;
+  payment_status: string; 
 };
 
 export default function RentalHistoryPage() {
@@ -61,7 +61,10 @@ export default function RentalHistoryPage() {
   }, [user, profile, authLoading, router, fetchRentalHistory]);
 
   const handlePayment = async (transactionId: string) => {
-    console.log(`Simulating payment for transaction: ${transactionId}`);
+    // --- START OF DEBUGGING ---
+    console.log(`[1] Starting payment process for transaction ID: ${transactionId}`);
+    // --- END OF DEBUGGING ---
+    
     try {
       const response = await fetch('/api/payments/mark-as-paid', {
         method: 'POST',
@@ -71,28 +74,52 @@ export default function RentalHistoryPage() {
 
       const updatedTransaction = await response.json();
 
+      // --- START OF DEBUGGING ---
+      console.log('[2] Received response from API. Status:', response.status);
+      console.log('[3] Parsed updated transaction data from response:', updatedTransaction);
+      // --- END OF DEBUGGING ---
+
       if (!response.ok) {
         throw new Error(updatedTransaction.error || "Payment failed.");
       }
 
-      // Update the state locally for an instant UI change without a full refetch
-      setRentals(currentRentals => 
-        currentRentals.map(r => 
-          r.trsc_id === updatedTransaction.trsc_id ? { ...r, ...updatedTransaction } : r
-        )
-      );
+      // This is the crucial part for updating the UI
+      setRentals(currentRentals => {
+        let itemFound = false;
+        const newRentals = currentRentals.map(r => {
+          if (r.trsc_id === updatedTransaction.trsc_id) {
+            itemFound = true;
+            // --- START OF DEBUGGING ---
+            console.log(`[4] Match found! Updating rental item with ID: ${r.trsc_id}`);
+            // --- END OF DEBUGGING ---
+            // The API returns a raw transaction row. We merge it with the existing item
+            // to preserve the nested Room and Instrument data.
+            return { ...r, ...updatedTransaction }; 
+          }
+          return r;
+        });
+
+        // --- START OF DEBUGGING ---
+        if (!itemFound) {
+          console.error("[5] CRITICAL ERROR: No matching rental was found in the current state to update. Check if trsc_id from API response matches an ID in the page's data.");
+        }
+        // --- END OF DEBUGGING ---
+        
+        return newRentals;
+      });
       
     } catch (err: unknown) {
+      console.error("[X] CATCH BLOCK ERROR:", err);
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('An unexpected error occurred.');
+        setError("An unknown error occurred.");
       }
     }
   };
 
   const { instrumentRentals, roomRentals } = useMemo(() => {
-    const instruments = rentals.filter(r => r.Transaction_Instrument.length > 0);
+    const instruments = rentals.filter(r => r.Transaction_Instrument && r.Transaction_Instrument.length > 0);
     const rooms = rentals.filter(r => r.Room !== null);
     return { instrumentRentals: instruments, roomRentals: rooms };
   }, [rentals]);

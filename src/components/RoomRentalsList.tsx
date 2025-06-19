@@ -22,8 +22,8 @@ export default function RoomRentalsList({ rentals, onPay }: Props) {
     <div className="space-y-8">
       {rentals.map((rental) => {
         const isLate = rental.trsc_latefee != null && rental.trsc_latefee > 0;
-        // Use trsc_paymentmethod as a placeholder for payment status
-        const isPaid = rental.trsc_paymentmethod === 'Paid';
+        // Correctly check the payment_status column
+        const isPaid = rental.payment_status === 'Paid';
 
         return (
           <div key={rental.trsc_id} className={`p-6 border rounded-xl shadow-lg bg-white transition-shadow duration-300 ${isPaid && isLate ? 'border-red-400' : 'border-gray-200'}`}>
